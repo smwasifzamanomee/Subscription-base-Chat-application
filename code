@@ -1,1 +1,195 @@
 
+<template>
+    <div class="container-fluid" v-if="this.$cookies.isKey('token')">
+        <!--check is cookie key token is exists or not-->
+        <div class="row">
+
+            <div class="col-md-3 border-end">
+                <div class="row mt-1 border-bottom">
+                    <div class="col-md-3">
+                        <div class="user-avatar">
+                            <img src="../../assets/avatar-s-15.png" class="rounded-circle" style="width:90%;">
+                            <span class="status text-success">●</span>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        {{ user_data.name }}<br />
+                        <small><i class="bi bi-house"> Working at home</i></small>
+                    </div>
+                    <div class="input-group mb-3 mt-1">
+                        <span class="input-group-text" id="basic-addon1"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Search" aria-label="Username"
+                            aria-describedby="basic-addon1">
+                    </div>
+                </div>
+
+                <div class="row mt-1 scrollbar scrollbar-primary small ">
+                    <!--Foreach Loop-->
+                    <div v-for="user in users" :key="user.id">
+                        <div @click="connect_user(user_data.id, user.id)" id="active"
+                            class="row pt-1 pb-1 shadow-none bg-light rounded" v-if="user_data.id != user.id">
+                            <div class="col-md-3">
+                                <div class="user-avatar">
+                                    <img src="../../assets/avatar-s-1.png" class="rounded-circle" style="width:90%;">
+                                    <span class="status text-success">●</span>
+                                </div>
+
+                            </div>
+                            <div class="col-md-6">
+                                {{ user.name }}
+                                <br>
+                                <i class="bi bi-check"></i>{{ user.email }}
+
+                            </div>
+                            <div class="col-md-3 text-info text-end" style="font-size:small">
+                                Yesterday<br>
+                                <span><i class="bi bi-pin-angle float-end text-muted"></i></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--end loop-->
+
+                </div>
+            </div>
+
+            <div id="" class="col-md-9 scrollbar1 scrollbar-primary small">
+                <template v-for="cd in chat_details" :key="cd.id">
+                    <div v-if="cd.sender_id == user_data.id" class="row mb-2 pt-1" style="text-align: right">
+                        <div class="col-md-11"><br>
+                            <div class="my-chat">
+                                <span>{{ cd.text }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-1" style="text-align: left">
+                            <img src="../../assets/avatar-s-15.png" class="rounded-circle high">
+                        </div>
+
+                    </div>
+
+                    <div v-else class="row mb-2 pt-1">
+                        <div class="col-md-1">
+                            <img src="../../assets/avatar-s-1.png" class="rounded-circle high">
+                        </div>
+                        <div class="col-md-11"><br>
+                            <div class="">
+                                <span>{{ cd.text }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+            </div>
+            <!--send-->
+            <div>
+                <section class="fixed-bottom mb-2 " >
+                    <form @submit.prevent="sendMessage(user_data.id,rcv_id)">
+                    <div class="input-group w-75 float-end  bg-light">
+                        <input v-model="text" id="btn-input" type="text" class="form-control" placeholder="Type your message">
+                        <span class="input-group-text"><i class="bi bi-image"></i></span>
+                        <span class="col-auto ms-2">
+                           <input type="submit" class="btn btn-primary" value="Send"> 
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+                        </span>
+                    </div>
+                    </form>
+                </section>
+
+            </div>
+        </div>
+    </div>
+    <div v-else>{{ this.$router.push('/') }}</div>
+    <!--if cookie key token is not exists go for login-->
+</template>
+<style>
+@import '@/CSS/style.css';
+</style>
+
+<script>
+
+export default {
+    // name: 'App',
+    data() {
+        return {
+            text : "", 
+            users: [],
+            user_data: [],
+            chat_details: [],
+            rcv_id: "",
+            // sender_id: "",
+            // receiver_id:""
+
+        }
+    },
+    inject: ['apiBasePath'],
+    created: function () {
+        this.fetchItems();
+        this.userinfo();
+        // this.connect_user();
+        // this.sendMessage();
+         
+
+    },
+ mounted(){
+
+ setTimeout(this.connect_user, 5000);
+ }, 
+    methods: {
+        fetchItems() {
+            this.axios.get(this.apiBasePath + 'users', {
+            }).then(res => {
+                //console.log(res);
+                this.users = res.data;
+            }).catch(err => {
+                console.log(err.response);
+            });
+        },
+        userinfo() {
+            this.axios.get(this.apiBasePath + 'users/info/' + this.$cookies.get("token"), {
+            }).then(res => {
+                // console.log(res);
+                this.user_data = res.data;
+                console.log(this.user_data);
+            }).catch(err => {
+                console.log(err.response);
+            });
+        },
+        connect_user(user_id1, user_id2) {
+
+            //Chat from logged in user side
+            this.axios.get(this.apiBasePath + 'messages/show/' + user_id1 + '/' + user_id2, {
+            }).then(res => {
+                console.log(res);
+                this.chat_details = res.data;
+                console.log(this.chat_details);
+                this.rcv_id = user_id2
+
+            }).catch(err => {
+                console.log(err.response);
+            });
+
+            //marge both chat 
+        },
+        sendMessage(sender_id,receiver_id) {
+
+            this.axios.post(this.apiBasePath + 'messages/store', {
+                text: this.text,
+                sender_id: sender_id,
+                receiver_id: receiver_id
+            }).then(res => {
+                //console.log(res);
+                console.log(res.code);
+                this.connect_user(sender_id, receiver_id);
+                this.text = ""; 
+            }).catch(err => {
+                console.log(err.response);
+            });
+
+        },
+
+    }
+
+}
+
+</script>
